@@ -22,10 +22,14 @@ namespace aspnetclient
         [Option("Hub", Required = false, Default = "chathub", HelpText = "Specify the hub name your app server defined. Default is 'chathub'")]
         public string HubName { get; set; }
 
-        [Option("ServerMethod", Required = false, Default = "Echo", HelpText = "Specify the server method name your app server defined. Default is 'Echo'")]
+        [Option("ServerMethod", Required = false, Default = "TestEcho", HelpText = "Specify the server method name your app server defined. Default is 'TestEcho'")]
         public string ServerMethod { get; set; }
 
-        [Option("ClientMethod", Required = false, Default = "send", HelpText = "Specify the client method name your app server defined. Default is 'send'")]
+        [Option("ClientMethod", Required = false, Default = "testEchoBack", HelpText = "Specify the client method name your app server defined. Default is 'testEchoBack'")]
         public string ClientMethod { get; set; }
+
+        [Option("Transport", Required = false, Default = "WebSocketTransport",
+         HelpText = "Specify the transport <WebSocketTransport|LongPollingTransport|ServerSentEventsTransport> you want to apply. Default is WebSocketTransport")]
+        public string Transport { get; set; }
     }
 }

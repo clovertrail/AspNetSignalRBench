@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNet.SignalR.Client;
+using Microsoft.AspNet.SignalR.Client.Transports;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,6 +15,7 @@ namespace aspnetclient
         private static readonly TimeSpan INTERVAL = TimeSpan.FromMilliseconds(1000);
         private List<HubConnection> _hubConnections;
         private List<IHubProxy> _hubProxy = new List<IHubProxy>();
+        private List<IClientTransport> _transportList = new List<IClientTransport>();
         private Counter _counter;
         private Timer _timer;
         private bool _start = false;
@@ -21,12 +23,14 @@ namespace aspnetclient
         private string _content;
         private string _serverMethod;
         private string _clientMethod;
+        private string _transport;
 
         public ClientConnection(ArgsOption args, Counter counter)
         {
             _counter = counter;
             _serverMethod = args.ServerMethod;
             _clientMethod = args.ClientMethod;
+            _transport = args.Transport;
             InitSendingContent(args.SendSize);
             CreateConnections(args);
             PrepareTimer();
@@ -86,7 +90,7 @@ namespace aspnetclient
             var tasks = new List<Task>();
             foreach (var c in _hubConnections)
             {
-                tasks.Add(c.Start());
+                tasks.Add(c.Start(createClientTransportAndCached(_transport)));
             }
             await Task.WhenAll(tasks);
         }
@@ -122,6 +126,28 @@ namespace aspnetclient
             }
         }
 
+        private IClientTransport createClientTransport(string transport)
+        {
+            switch (transport)
+            {
+                case "WebSocketTransport":
+                    return new WebSocketTransport();
+                case "LongPollingTransport":
+                    return new LongPollingTransport();
+                case "ServerSentEventsTransport":
+                    return new ServerSentEventsTransport();
+                default:
+                    throw new NotSupportedException($"wrong transport type {transport}");
+            }
+        }
+
+        private IClientTransport createClientTransportAndCached(string transport)
+        {
+            var clientTransport = createClientTransport(transport);
+            _transportList.Add(clientTransport);
+            return clientTransport;
+        }
+
         private Task SendMessage()
         {
             var tasks = new List<Task>();
@@ -149,6 +175,10 @@ namespace aspnetclient
             if (!_disposed)
             {
                 _timer.Dispose();
+                foreach (var t in _transportList)
+                {
+                    t.Dispose();
+                }
                 _disposed = true;
             }
         }
